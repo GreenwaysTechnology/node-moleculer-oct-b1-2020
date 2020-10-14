@@ -1,0 +1,639 @@
+What is Node.js?
+
+ Node.js is javascript platform.
+ Node.js is built on top of google v8 javascript vm.
+ 
+Why node.js was created?
+
+ To build non blocking and async web and network applications using javascript language.
+
+
+Web apps are built using java,.net,php,..... these technologies..
+
+Generall web apps architecture:
+................................
+
+Lets take java  apps - servlet...
+................................
+
+1.Web apps are hosted /deployed on web containers like tomcat,websphere,weblogic.....
+
+
+Request-Response work flow with respect to Tomcat:
+.................................................
+
+How web servers(tomcat) handle request?
+
+ Tomcat receives a request, creates a new thread or allocates  a existing thread from pool.
+
+For each User /Request ---- a new thread thread is created
+
+ 1000 /users/rquests-------------------1000 threads
+
+ 10k------------------------------------10k threads
+
+This is called concurrency....
+
+each thread may take up to 10mb data
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Drawbacks:
+
+1. when ever a request comes, the server need to create thread,more thread, more resources
+2 . each thread may do io operations like reading files,talking to databases,talking to thrid party 
+   apis.
+3. during io , thread is waiting / blocked /parked for io.
+
+4.if more threads are blocked, it will degrade performance,we need to add more machines, which will increase cost of investement.
+
+
+Solution:
+
+In 2000, the theroy was published called "10kc" - 10 k concurrent connections at a time.
+
+As part of this theory new architecture was created.
+
+ "Having less threads, non blocking and async threads".
+
+Dont block thread for io, have minmium number of threads.
+
+The first architecture was implemented in webserver "nginx".
+......................................................................................................
+
+NGinx:
+.......
+
+1.having limited threads, more concurrency.
+2.non blocking api at kernal level
+3.Event driven approach to handle io results.
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Node.js Internal Archiecture:
+
+collection of many components
+
+1.v8 engine
+  Which is from goolgle.
+  Supports all javascript language spec.
+  Which was developed only for browser.
+  Node creator wanted to build web,file system io,network io application.
+  but there is no api available in javascript language.
+  who wanted to add new apis on v8.
+  V8 is written i C++.
+
+2.Node binding c layer:
+  node creator who created low level system calls to build io applications.
+  written c language
+ Node binding java script language which high level javascript apis 
+
+3.libvu
+
+ libuv is a multi-platform support library with a focus on asynchronous I/O. It was primarily developed for use by Node.js, but it’s also used by Luvit, Julia, pyuv, and others.
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+lets start coding;
+
+
+how to write async and non blocking application.
+
+
+in order write code, the platform / framework/ language , must provide apis.
+
+ eg: to talk to network sockets,to talk to file system, to talk to other resources..
+
+node provides lot of high level apis.
+
+All non blocking architectures are powered event driven model, events are notified by kernal, we need
+to process event,
+ The thread call event loop thread is used to process events.
+
+As soon as event arrived to application process(node), will assign handler - 
+
+In js, handler is a function, which is called as callback function.
+
+callback function is other wise called handler function, will be called by event loop thread, to process
+result.
+
+
+Steps:
+
+1.write a high level async/non blocking api
+2.register handler function with high level;
+   function as parameter.
+
+api category:
+
+1.timer api
+2.io apis
+
+styles of writing non blocking js
+
+1. callback style
+2. Promise style.
+2.1.Promise style enchanment via async and await.
+
+
+Timer:
+1.setTimeout
+2.setInterval
+
+
+//non blocking programming ; using timer
+
+function blockMe(message){
+    console.log(message)
+}
+
+function delay(handler) {
+    setTimeout(handler, 1000)
+}
+
+blockMe('start')
+delay(function () {
+    //code will be called after timeout event is triggered by kernel.
+    console.log('i am delayed message')
+})
+blockMe('end')
+
+
+
+
+//non blocking programming ; using timer with data 
+const { log } = console;
+const delay = handler => {
+    let message = { id: 1, msg: 'Hello' };
+    setTimeout(handler, 1000, message)
+}
+
+// delay(function () {
+//     //code will be called after timeout event is triggered by kernel.
+//     console.log('i am delayed message')
+// })
+delay(response => log(response));
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//infinite timer; heart beat 
+const { log } = console;
+const heartBeat = handler => {
+    const timerId = setInterval(handler, 1000, new Date());
+    //stopping the timer
+    setTimeout(() => {
+        clearInterval(timerId)
+    }, 10000);
+}
+
+//function as parameter; callback function/handler function.
+heartBeat(date => log(date))
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function composition:
+.....................
+
+in oo world(java):
+.................
+ if you want to write code, in each excution,you get output, that output is going to be input other code.
+
+eg: jdbc code
+
+1.Connection con = Drivermanger.getConnection("connstring");
+2.Statement  st= con.createStatment();
+3.ResultSet rows = st.executeQuery("query");
+........
+
+what if if you want to write code using functional style(using non blocking).
+..............................................................................
+
+nested function. 
+
+ output of one function will be input to the next funciton and so on.....
+
+
+
+//nested function,function compostion, callback nesting,callback chaining....
+
+//a function may return data, or error
+const { log } = console;
+
+const getUser = (resolve, reject) => {
+    //biz logic
+    let user = {
+        id: 1,
+        name: 'admin'
+    };
+    //user=null;
+    if (user) {
+        setTimeout(resolve, 1000, user);
+
+    } else {
+        setTimeout(reject, 1000, { message: 'User not found' });
+    }
+};
+
+//login; login function will be only if getUser returns user data.
+const login = (user, resolve, reject) => {
+    //biz logic
+    if (user.name === 'admin') {
+        setTimeout(resolve, 1000, { message: 'Login Success' });
+    } else {
+        setTimeout(reject, 1000, { message: 'login failed' });
+    }
+
+}
+
+const showpage = (status, resolve, reject) => {
+    //biz logic
+    if (status.message === 'Login Success') {
+        setTimeout(resolve, 1000, { message: 'You are admin' });
+    } else {
+        setTimeout(reject, 1000, { message: 'You are guest' });
+    }
+
+}
+
+getUser(user => {
+    log('get user is called')
+    //callback chaining/nesting/composion
+    login(user, status => {
+        log('login is called')
+        showpage(status, spage => {
+            log('show page  is called')
+            log(spage)
+        }, errorpage => {
+            log(errorpage)
+        });
+    }, loginerror => {
+        log(loginerror)
+    });
+}, error => {
+    log(error)
+});
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Callback:
+
+getUser(user => {
+    log('get user is called')
+    //callback chaining/nesting/composion
+    login(user, status => {
+        log('login is called')
+        showpage(status, spage => {
+            log('show page  is called')
+            log(spage)
+        }, errorpage => {
+            log(errorpage)
+        });
+    }, loginerror => {
+        log(loginerror)
+    });
+}, error => {
+    log(error)
+});
+
+
+Questions:
+
+1.Whether this is able to understand quickly
+2.Whether this code is able to debug
+3.Whehter this code is scalable?
+4.whether this code is maintaiable?
+
+
+  "No" : This is what we call as "Callback hell".
+
+The way we write the code is called callback hell
+
+fs.readdir(source, function (err, files) {
+  if (err) {
+    console.log('Error finding files: ' + err)
+  } else {
+    files.forEach(function (filename, fileIndex) {
+      console.log(filename)
+      gm(source + filename).size(function (err, values) {
+        if (err) {
+          console.log('Error identifying file size: ' + err)
+        } else {
+          console.log(filename + ' : ' + values)
+          aspect = (values.width / values.height)
+          widths.forEach(function (width, widthIndex) {
+            height = Math.round(width / aspect)
+            console.log('resizing ' + filename + 'to ' + height + 'x' + height)
+            this.resize(width, height).write(dest + 'w' + width + '_' + filename, function(err) {
+              if (err) console.log('Error writing file: ' + err)
+            })
+          }.bind(this))
+        }
+      })
+    })
+  }
+})
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+///////////////////////////////////////////////////////////////////////////////////////////
+
+How to write better callback programming /async/non blocking ? or How to avoid callback hell?
+
+
+In 2005, JQUERY team started with working complex callback patterns, they found callback hell problem.
+
+They proposed a  Design pattern to write better callback programming(Async) programming.
+
+  "Promise".
+
+Promise is design pattern which hides complexity of callback patterns
+
+
+SInce Promise is design pattern, many people have implemented Promise design pattern.
+
+1.JQuery -first promise implementation
+2.many libs and frameworks
+
+2012 E6 Commit introduced promise design pattern  as  "Promise" Object  in javascript.
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
+Promises and non blocking,async and callback hell issues:
+.........................................................
+
+features of Promise Object:
+
+1.Promise by deafult is Async. Which implements timer api with 0 ms .
+
+Promise can be used with any async callback based  implementations.
+
+Objective:
+
+ To remove callbacks in async/non blocking code. write cleaner async programming.
+ To remove complex callback chaining code.
+
+
+Promise Implemenation:
+
+1. Create Promise Object from Promise contructor
+2. Create Promise object from factory apis 
+
+Promise object methods:
+1.then - success
+2.catch - errors
+3.finally - clean up
+factory api to create Promise object
+4.resolve
+5.reject
+.......................................
+6.all
+7.race
+
+
+Lets code using Promise
+
+Promise Object creations:
+
+1.factory apis.
+ resolve
+ reject
+ both
+
+
+
+//Promise Object creations ;
+
+
+//using factory methods
+
+//return success result.
+
+function getSuccessPromise() {
+    //Return promise  object with 0 ms setTimeout
+    return Promise.resolve('i am done');
+}
+
+function getFailurePromise() {
+    //Return promise  object with 0 ms setTimeout
+    return Promise.reject('something went wrong!!!');
+}
+
+//success /failure based on biz logic
+
+function isActive(status) {
+    if (status) {
+        return Promise.resolve('Active')
+    } else {
+        return Promise.reject('In Active');
+    }
+}
+
+function blockMe(message){
+    console.log(message)
+}
+
+
+// let mypromise = getSuccessPromise();
+// mypromise.then(res => console.log(res));
+
+// code refactoring  Promise is based on builder pattern , any api returns promise itself
+//so we can call methods using chaining pattern.
+// in java ; "hello".trim().toUppercase().trim().....
+
+blockMe('start')
+getSuccessPromise()
+    .then(res => console.log(res));
+
+getFailurePromise()
+    .catch(err => console.log(err));
+
+isActive(true)
+    .then(res => console.log(res))
+    .catch(err => console.log(err))
+    .finally(() => console.log('done!!!!'));
+
+isActive(false)
+    .then(res => console.log(res))
+    .catch(err => console.log(err))
+    .finally(() => console.log('done!!!!'))
+
+blockMe('end')
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Promise using Constructor pattern.
+/**
+ * if any code  which is already written using callback style
+ * if you want to convert to promise, then you can go with Promise Constructors.
+ * 
+ * Ajax- browser api for network calls.
+ * fundamentally ajax is callback based
+ * XMLHttpRequest- callback object.
+ * 
+ * ajax libs;
+ * jquery, fetch.js
+ * 
+ */
+
+//delay api with callback version
+function delay(callback) {
+    setTimeout(callback, 5000, 'Hello!Callback');
+}
+
+delay((res) => {
+    console.log(res)
+});
+//delay api with promise versoin
+//you dont need to pass function as parameter
+//you have to return promise object
+//inside promise you have to write your async code.
+function delayV2() {
+    return new Promise((resolve, reject) => {
+        //wrap existing callbacks inside promise,so other developer use only promise.
+        setTimeout(resolve, 6000, 'Hello!Promise');
+    });
+}
+delayV2()
+    .then(res => console.log(res))
+    .catch(err => console.log(err))
+    .finally(() => console.log('done'))
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Promise chaining:
+const { log } = console;
+
+const getUser = () => {
+    //biz logic
+    let user = {
+        id: 1,
+        name: 'admin'
+    };
+    //user=null;
+    return new Promise((resolve, reject) => {
+        if (user) {
+            setTimeout(resolve, 1000, user);
+        } else {
+            setTimeout(reject, 1000, { message: 'User not found' });
+        }
+    });
+
+};
+
+//login; login function will be only if getUser returns user data.
+const login = (user) => {
+    //biz logic
+    return new Promise((resolve, reject) => {
+        if (user.name === 'admin') {
+            setTimeout(resolve, 1000, { message: 'Login Success' });
+        } else {
+            setTimeout(reject, 1000, { message: 'login failed' });
+        }
+    });
+
+}
+
+const showpage = (status) => {
+    //biz logic
+    return new Promise((resolve, reject) => {
+        if (status.message === 'Login Success') {
+            setTimeout(resolve, 1000, { message: 'You are admin' });
+        } else {
+            setTimeout(reject, 1000, { message: 'You are guest' });
+        }
+    });
+
+};
+
+//nested promise chaining-v1
+getUser()
+    .then(user => {
+        log('get user is called')
+        login(user)
+            .then(status => {
+                log('login is called')
+                showpage(status)
+                    .then(pageres => {
+                        log('show page is called')
+                        log(status);
+                    })
+                    .catch(pageerror => log(pageerror));
+            }).catch(loginerr => log(loginerr))
+    })
+    .catch(err => {
+        log(err);
+    });
+//.finally(() => log('done!!!'));
+
+//code refactoring ; registring then outside methods-V2
+
+getUser()
+    .then(user => {
+        log('get user is called')
+        return login(user);
+    })
+    .then(status => {
+        log('login is called')
+        return showpage(status);
+    })
+    .then(page => {
+        log('show page is called')
+        log(page);
+    })
+    .catch(err => {
+        log(err);
+    });
+
+//v3 simple code
+getUser()
+    .then(user => login(user))
+    .then(status => showpage(status))
+    .then(page => log(page))
+    .catch(err => {
+        log(err);
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

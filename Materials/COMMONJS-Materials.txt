@@ -1,0 +1,264 @@
+Javascript modularity:
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Modularity:
+..........
+
+In java Modularity , is presented via "Packages"
+
+Package organize the code  logically.
+
+Customer.java
+
+package com.ibm.cms
+
+public class Customer{}
+
+Java organizes code folders and files Physically.
+
+d:/javaapps/src/
+    com/ibm/cms/Customer.java
+
+
+What about javascript Modularity?
+
+ Javascript is file based modularity physically
+ but logically there is no such modularity at language level.
+
+ collection of variable declarations and function.
+
+Once js started growing in large scale, dev struck to organize code.
+
+2000, Smart developers started thinking about how to modualrize js code.
+ 
+
+Module design patterns came.
+
+1.Namespace design pattern : 2000 : jquery
+2.AMD -Async Module Defintion : dojo
+---------------------------------------------------------
+3.CJS - Common JS =  namespace + amd
+4.ES 6 Module design pattern  = amd + cjs
+------------------------------------------------------------
+5.System = AMD = CJS + ES 6
+6.UMD = NAMESPACE + AMD + CJS = ES 6
+
+
+only two design patterns are used in development
+
+1.CJS - Common JS =  namespace + amd
+2.ES 6 Module design pattern  = amd + cjs
+
+CJS ; implemented inside node js. node supports commonjs by default.
+
+I can organize the code , based on these patterns, but what about runtimes?
+  js runtime never suppport these patterns directly then each design pattern is lib.
+
+ Loaders : it is simple js lib to help link and load js files.
+
+
+lets start cjs first;
+......................
+
+cjs is built in node js.
+node supports cjs in built. no separate loader or linker is required
+but if you run cjs code on browsers , we need loaders.
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Object augmentation:
+
+In javascript objects are simple map/dictionary.
+
+Since object is datastructure , we can add,delete,update,iterate object properties dynamically.
+ This is called as "Object augmentation".
+
+
+//empty object
+let product = {};
+
+//add property during runtime
+product.id = 1;
+product.name = 'phone'
+product.price = 1000;
+
+console.log(product)
+//update ; js will see that property already exists , if then update starts else add.
+product.price = 4000
+
+console.log(product)
+
+//delete object property
+delete product.price
+console.log(product)
+
+//iteration
+for (const key in product) {
+    console.log(key, product[key]);
+}
+
+commonjs :
+
+
+mylib.js
+
+//code -  could be variable declaration,class declaration,function declaration.
+
+//if you want share any code , you have to pack the code
+
+//in order to pack code, cjs (node) provides two variables- exports,module.exports
+//exports
+
+/**
+ * exports is a variable declared inside require function
+ * 
+ * dummy code
+ * 
+ * function require(fileName){
+ *  let exports={};
+ * 
+ *  exports.name='subramanian';  
+ * 
+ *  return exports
+ * }
+ * const result = require('./mylib')
+ * 
+ * 
+ */
+
+exports.firstName = 'subramanian';
+exports.lastName = 'Murugan';
+exports.isActive = true;
+exports.salary = 1000;
+exports.sayGreet = function () {
+    return 'greet'
+}
+exports.skills = ['java', 'javascript', 'node'];
+exports.address = {
+    city: 'Coimbatore'
+}
+
+index.js
+const result = require('./mylib')
+//require function by default returns literal object, its value is empty object
+console.log(result)
+
+//////////information////////////////////////
+
+console.log(result.firstName)
+console.log(result.lastName)
+console.log(result.isActive)
+console.log(result.salary)
+console.log(result.sayGreet())
+console.log(result.skills)
+console.log(result.address)
+
+
+
+
+index.js
+const { firstName, lastName, isActive, salary, skills, 
+    address: { city } } = require('./mylib')
+
+//////////information////////////////////////
+
+console.log(firstName)
+console.log(lastName)
+console.log(isActive)
+console.log(salary)
+//console.log(sayGreet())
+console.log(skills)
+console.log(city)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+mock-data/Orders.js
+
+const ORDERS = [
+    {
+        id: 1,
+        value: 100
+
+    },
+    {
+        id: 2,
+        value: 1600
+
+    },
+    {
+        id: 3,
+        value: 700
+
+    }
+];
+module.exports = ORDERS;
+
+services/OrderService.js
+const ORDERS = require('../mock-data/Orders')
+
+/**
+ * function require(fileName){
+ *  let exports = {};
+ *  let module.exports;
+ * 
+ *  if(module.exports){
+ * 
+ *    return code
+ *  }
+ * 
+ *   return exports
+ * 
+ * 
+ * }
+ */
+
+
+class OrderService {
+    constructor(){
+        console.log('order service is called!!!')
+    }
+    findAll(){
+        return ORDERS;
+    }
+}
+
+module.exports = OrderService;
+
+index.js
+const OrderService = require('./services/OrderService');
+
+////////////////////////////////////////////////
+const service = new OrderService();
+const { findAll } = new OrderService();
+
+
+function startApp() {
+    findAllProducts();
+}
+startApp();
+
+function findAllProducts() {
+    //console.log(service.findAll())
+    console.log(findAll())
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
