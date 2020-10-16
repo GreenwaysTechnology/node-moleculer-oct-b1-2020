@@ -1,91 +1,26 @@
+const express = require('express');
+const MessageRouter = require('./routers/messagerouter');
+const BooksRouter = require('./routers/booksrouer');
+const bodyParser = require('body-parser');
+
+
 const { log } = console;
+const port = 3000;
+//create application object
+const app = express();
 
-const getUser = () => {
-    //biz logic
-    let user = {
-        id: 1,
-        name: 'admin'
-    };
-    //user=null;
-    return new Promise((resolve, reject) => {
-        if (user) {
-            setTimeout(resolve, 1000, user);
-        } else {
-            setTimeout(reject, 1000, { message: 'User not found' });
-        }
-    });
+//bind parsers
+app.use(bodyParser.json())
 
-};
+//connect Routers with application object
+app.use('/api/message',MessageRouter)
+app.use('/api/books',BooksRouter);
 
-//login; login function will be only if getUser returns user data.
-const login = (user) => {
-    //biz logic
-    return new Promise((resolve, reject) => {
-        if (user.name === 'admin') {
-            setTimeout(resolve, 1000, { message: 'Login Success' });
-        } else {
-            setTimeout(reject, 1000, { message: 'login failed' });
-        }
-    });
 
-}
-
-const showpage = (status) => {
-    //biz logic
-    return new Promise((resolve, reject) => {
-        if (status.message === 'Login Success') {
-            setTimeout(resolve, 1000, { message: 'You are admin' });
-        } else {
-            setTimeout(reject, 1000, { message: 'You are guest' });
-        }
-    });
-
-};
-
-//nested promise chaining-v1
-getUser()
-    .then(user => {
-        log('get user is called')
-        login(user)
-            .then(status => {
-                log('login is called')
-                showpage(status)
-                    .then(pageres => {
-                        log('show page is called')
-                        log(status);
-                    })
-                    .catch(pageerror => log(pageerror));
-            }).catch(loginerr => log(loginerr))
-    })
-    .catch(err => {
-        log(err);
-    });
-//.finally(() => log('done!!!'));
-
-//code refactoring ; registring then outside methods-V2
-
-getUser()
-    .then(user => {
-        log('get user is called')
-        return login(user);
-    })
-    .then(status => {
-        log('login is called')
-        return showpage(status);
-    })
-    .then(page => {
-        log('show page is called')
-        log(page);
-    })
-    .catch(err => {
-        log(err);
-    });
-
-//v3 simple code
-getUser()
-    .then(user => login(user))
-    .then(status => showpage(status))
-    .then(page => log(page))
-    .catch(err => {
-        log(err);
-    });
+app.get('/', (request, response) => {
+    response.end('Home')
+});
+//start server
+app.listen(port, () => {
+    log('Express server is running @', port);
+});

@@ -590,19 +590,1640 @@ getUser()
     });
 
 
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+async and await ; es 7 keywords
+
+
+Promise Hell: Promise has limitions;
+......................
+
+1.Promise is still  complex when you start scalling complex async operations.
+
+2.Which is not readable ,which uses lot of then, catch blocks
+
+In order to write even simple complex async work flows ES 7 introduced
+a concept called "async await" keywords
+
+
+ It is simplest pattern of Promises.
+ It is promise driven only.
+
+         "Sync style of Async Code" 
+
+async key must be used with function declaration.
+await is used to pause async calls
+
+
+async ;
+
+-used in front of function declaration ; those functions are called async function.
+
+
+1.node in built modules
+
+
+1.os module
+2.events module
+3.file system module
+4.path
+5.http module
+
+note: any module is distributed as javascript file
+
+OS: Operating System
+....................
+The os module provides operating system-related utility methods and properties. 
+It can be accessed using:
+  os.js  ------> const ? =  require('os')
+
+
+const { arch, hostname, cpus } = require('os');
+const { log } = console;
+
+// log(os.arch())
+// log(os.hostname())
+// log(os.cpus())
+
+log(arch())
+log(hostname())
+log(cpus())
 
 
 
+./ vs ''
+.........
+
+ require('./services/TODOService');
+  ->here you can see ./
+  ./ -current dir
+ require('os'); => 
+  -here no ./ 
+
+Why?
+
+Note : if you are java devp, you know the classpath , how it works?
 
 
 
+require('os');
+
+Node internally uses a search algorthim,node always looks the folder called
+ "node_modules" in the current project, if not , then it searches, the node in built 
+installtion folder---c:/pf/node/node_nodules--if it finds it will pick up from there else it will throw error.
+
+require('./services/TODOService');
+   it will lookup in the current dir or sub dirs only.
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Event Emitter module;
+
+how to build application event driven programming.
+
+Much of the Node.js core API is built around an idiomatic asynchronous event-driven architecture in which certain kinds of objects (called "emitters") emit named events that cause Function objects ("listeners") to be called.
+
+
+how to create custom events and how to use it?
+
+const EventEmitter = require('events');
+
+
+//OrderService now can enable event driven programming model
+/**
+ * Steps 
+ * 1.inherit EventEmitter class with our domain class
+ * 2.you have to write listener using on method
+ * 3.have to write biz method, inside you can emit event.
+ */
+
+class OrderService extends EventEmitter {
+    constructor() {
+        super();
+        //listener regeration ; event represents object having data .
+        this.on('sales', event => {
+            console.log(`Got ${event.orderId} ${event.qty} ${event.value}`)
+        })
+    }
+    placeOrder(order) {
+        //when ever place order is called, it can emit event
+        setTimeout(() => {
+          //async event driven programming
+            this.emit('sales', order);
+        }, 1000)
+    }
+
+}
+//start
+function startApp() {
+    let orderService = new OrderService();
+    //call biz api
+    orderService.placeOrder({ orderId: 'OD001', qty: 100, value: 1000 })
+}
+startApp();
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+non blocking io:
+
+Node non blocking io apis
+
+1.fs io
+   -files system 
+2.network io
+  -http : web apps
+  -tcp
+  -udp
+
+
+File system:
+const fs = require('fs');
+
+const filePath = './src/assets/info.txt';
+const writeFilePath = './src/assets/info-copy.txt';
+
+const options = {
+    encoding: 'utf-8'
+};
+
+class FileService {
+    constructor() { }
+    readFileV1(handler) {
+        fs.readFile(filePath, options, (err, data) => {
+            if (err) throw err;
+            handler(data);
+        });
+    }
+    readFileV2() {
+
+        return new Promise((resolve, reject) => {
+
+            fs.readFile(filePath, options, (err, data) => {
+                if (err) {
+                    reject(err)
+                }
+                resolve(data);
+            });
+        })
+
+    }
+    writeFile(data) {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(writeFilePath, data, options, err => {
+                if (err) {
+                    reject(err);
+                }
+                resolve('file has been written')
+            });
+        });
+    }
+
+}
+module.exports = FileService;
+
+const { start } = require('repl')
+const FileService = require('./services/FileService')
+
+const fileService = new FileService();
+
+async function readOperation() {
+    fileService.readFileV1((response) => {
+        console.log(response);
+    });
+    //
+    fileService.readFileV2()
+        .then(res => console.log(res))
+        .catch(err => console.log(err));
+
+    try {
+        const fileData = await fileService.readFileV2();
+        console.log(fileData)
+    } catch (err) {
+        console.log(err)
+    }
+}
+async function writeOperation(data) {
+    try {
+        const status = await fileService.writeFile(data);
+        console.log(status)
+    } catch (err) {
+        console.log(err)
+    }
+}
+
+async function startApp() {
+    //readOperation()
+    writeOperation('Hello,Node io')
+
+}
+startApp();
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Path: platform independant file and dir maniuplation.
+
+const fs = require('fs');
+const path = require('path');
+
+
+//path module will help to resolve platform independant file and accessiblity
+
+//const filePath = './src/assets/info.txt';
+const filePath = path.join(__dirname, '../assets/info.txt')
+//const writeFilePath = './src/assets/info-copy.txt';
+const writeFilePath =path.join(__dirname,'../assets/info-copy.txt')
+
+const options = {
+    encoding: 'utf-8'
+};
+
+class FileService {
+    constructor() { }
+    readFileV1(handler) {
+        fs.readFile(filePath, options, (err, data) => {
+            if (err) throw err;
+            handler(data);
+        });
+    }
+    readFileV2() {
+
+        return new Promise((resolve, reject) => {
+
+            fs.readFile(filePath, options, (err, data) => {
+                if (err) {
+                    reject(err)
+                }
+                resolve(data);
+            });
+        })
+
+    }
+    writeFile(data) {
+        return new Promise((resolve, reject) => {
+            fs.writeFile(writeFilePath, data, options, err => {
+                if (err) {
+                    reject(err);
+                }
+                resolve('file has been written')
+            });
+        });
+    }
+
+}
+module.exports = FileService;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+Streams:
+........
+
+Flow of data.
+
+Async io operations can be done two ways.
+
+1.Non-Streaming io
+
+ fs.readFile
+ fs.writeFile 
+apis
+not good for big files 
+not good for network file transfer.
+
+
+2.Streaming   io
+//read file using streaming mode.
+
+const fs = require('fs');
+const path = require('path');
+const { log } = console;
+
+const fileName = path.join(__dirname, 'assets/info.txt');
+const config = {
+    encoding: 'UTF-8'
+}
+
+const inputStream = fs.createReadStream(fileName, config);
+
+//read data ; you need to register listeners for io.
+
+//data event is emitted by os for each chunk of data
+let data = ''
+inputStream.on('data', function (chunk) {
+    log(`Received ${chunk.length} bytes of data.`)
+    data += chunk;
+})
+
+//end event is called , no more chunk of data is availble.
+inputStream.on('end', () => {
+    log('There will be no more data to read!');
+    log(data);
+})
+
+//error event: for error handling
+inputStream.on('error', (err) => {
+    log(`Some thing went wrong! ${err}`)
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+const fs = require('fs');
+const path = require('path');
+
+const fileName = path.join(__dirname, 'assets/grains.txt');
+const config = {
+    encoding: 'utf8',
+    flag: 'w'
+};
+const outputStream = fs.createWriteStream(fileName, config);
+
+const grains = ['wheat', 'rice', 'oats'];
+
+grains.forEach(grain => {
+    outputStream.write(grain + " ");
+    console.log("Wrote: %s", grain);
+});
+
+outputStream.close();
+
+outputStream.on('close', function () {
+    console.log('file has been closed ')
+})
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Big File creation:
+const fs = require('fs');
+const path = require('path')
+
+const filePath = path.join(__dirname, "assets/big.file")
+const file = fs.createWriteStream(filePath);
+
+for (let i = 0; i <= 1e6; i++) {
+    file.write('Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n');
+}
+
+file.end();
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+Big File reading:
+................
+//read file using streaming mode.
+
+const fs = require('fs');
+const path = require('path');
+const { log } = console;
+
+const fileName = path.join(__dirname, 'assets/big.file');
+const config = {
+    encoding: 'UTF-8'
+}
+
+const inputStream = fs.createReadStream(fileName, config);
+
+//read data ; you need to register listeners for io.
+
+//data event is emitted by os for each chunk of data
+inputStream.on('data', function (chunk) {
+    log(`Received ${chunk.length} bytes of data.`)
+})
+
+//end event is called , no more chunk of data is availble.
+inputStream.on('end', () => {
+    log('There will be no more data to read!');
+})
+
+//error event: for error handling
+inputStream.on('error', (err) => {
+    log(`Some thing went wrong! ${err}`)
+});
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+Read + Write together:
+......................
+const fs = require('fs');
+const path = require('path');
+
+//read
+const inputfileName = path.join(__dirname, 'assets/info.txt');
+//write
+const outputFileName = path.join(__dirname, 'assets/greeter.txt');
+
+const config = {
+    encoding: 'UTF-8'
+}
+
+const inputStream = fs.createReadStream(inputfileName, config);
+const outputStream = fs.createWriteStream(outputFileName, config);
+
+//Register data event.
+inputStream.on('data', function (chunk) {
+    console.log(`Received ${chunk.length} bytes of data.`);
+    console.log(chunk);
+    outputStream.write(chunk);
+});
+
+
+//end event
+inputStream.on('end', function () {
+    console.log('There will be no more data to read!');
+    outputStream.close();
+})
+
+//error event: for error handling
+inputStream.on('error', function (err) {
+    console.log(`Some thing went wrong! ${err}`)
+});
+
+outputStream.on('close', function () {
+    console.log(`File write operation is completed`);
+});
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Back Pressure:
+..............
+Problems when you do read and write together
+
+1. In general read operation is faster than write operation
+
+
+Back Pressure means inputstream is fast, outputstream slow, then data will be
+lost.
+
+
+//back pressure
+
+const fs = require('fs');
+const path = require('path');
+
+const inputfileName = path.join(__dirname, 'assets/big.file');
+const outputfileName = path.join(__dirname, 'assets/big_copy.file');
+
+const config = {
+    encoding: 'UTF-8'
+}
+
+//Back pressure handling
+const readerStream = fs.createReadStream(inputfileName, config);
+const writeStr = fs.createWriteStream(outputfileName, config);
 
 
 
+readerStream.on('data', function (chunk) {
+    console.log(`Received ${chunk.length} bytes of data.`);
+    let buffer_good = writeStr.write(chunk);
+    if (!buffer_good) readerStream.pause();
+});
+writeStr.on('drain', function () {
+    console.log('buffer drained!');
+    readerStream.resume();
+});
+readerStream.on('end', function () {
+    //console.log(data);
+});
+
+readerStream.on('error', function (err) {
+    console.log(err.stack);
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+pipe method is simplest method for implementing back pressure:
+
+
+const fs = require('fs');
+const path = require('path');
+
+const inputfileName = path.join(__dirname, 'big.file');
+const outputfileName = path.join(__dirname, 'big_copy.file');
+
+const config = {
+      encoding: 'UTF-8'
+}
+
+//Back pressure handling
+const readerStream = fs.createReadStream(inputfileName, config);
+const writeStr = fs.createWriteStream(outputfileName, config);
+
+//backPressure streams
+//pipe method is simplest method which wraps resume,pasuse,drain 
+readerStream.pipe(writeStr);
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+HTTP:
+
+Node invented for building network io applications.
+
+Network implementation in non blocking:
+
+HTTP module is used to build http server,app, deployment
+
+
+HTTP modules objects:
+....................
+///////////////////////////////////////////////////////////////////////////////////////////////
+Agent :
+  client object
+//////////////////////////////////////////////////////////////////////////////////////////
+
+1.Server
+  Server object is used to implement http servers/web containers
+2.ServerResponse
+  Object is used to send data 
+3.ClientRequest
+   Request object is used to handle http client requests
+4.IncommingMessage
+   Represents message payloads.
+
+
+Note: all http implemnetation is streaming powered by default.
+
+
+Steps:
+
+1.create Server.
+2.request-response handling
+3.starting server
+
+Node handles every client request by a single thread-Event loop thread
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const http = require('http');
+
+
+//step-1 ; create server
+//step 2 ; request-response handler
+//req - is variable points to ClientRequest Object
+//res - is variable points to ServerResponse Object
+const server = http.createServer((req,res)=>{
+     //send response ; by calling end; end close the stream and send data
+    res.end("Hello,Node")
+});
+
+//step 3; start server
+server.listen(3000,()=>{
+    console.log(`Http Server listens @ ${3000}`)
+});
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const http = require('http');
+const { log } = console;
+
+//http events 
+const server = http.createServer((req, res) => {
+
+    res.end("Hello,Node")
+
+    let body = ''
+    req.on('data', (chunk) => {
+        body += chunk;
+        log(body);
+    });
+
+    res.on('close', () => {
+        log('response close event is called')
+    });
+    res.on('finish', () => {
+        log('response has been sent /committed')
+    });
+});
+
+server.listen(3000, () => {
+    console.log(`Http Server listens @ ${3000}`)
+});
+
+//server events
+server.on('request', (request, response) => {
+    log(`${request.method} ${request.url}`)
+});
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Web---Service--layer--integration:
+.................................
+const TODOS = require('../mock-data/Todos');
+
+
+class TodoService {
+
+    findAll() {
+        return new Promise((resolve, reject) => {
+            setTimeout(resolve, 5000, JSON.stringify(TODOS));
+        });
+    }
+
+}
+module.exports = new TodoService();
+
+
+const { findAll } = require('./services/TodoService');
+const http = require('http');
+
+const port = 3000;
+
+const server = http.createServer(async (req, res) => {
+    const todos = await findAll();
+    //set content-type, status code header
+    res.writeHead(200, {
+        'Content-Type': 'application/json'
+    })
+    res.end(todos);
+
+});
+
+server.listen(port, () => { console.log(`TodoServer is running @ ${port}`) })
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Third Party modules: NPM 
+....................
+
+Third party modules :
+ created by others , we are going to use them.
+ like libs,frameworks....
+
+
+Where is third moudles are located?
+what if i want to share my module to other developers?
+
+
+mvnrepository ==maven ==third party jar files
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+IS it possible to build real time web apps by using just pure http module alone?
+
+ Yes! but it is very complex
+
+node modules types
+1.custom module - discussed
+2.in built modules - disucssed
+3.third party modules - 
+
+
+Third party modules :
+ created by others , we are going to use them.
+ like libs,frameworks....
+
+
+Where is third moudles are located?
+what if i want to share my module to other developers?
+
+mvnrepository ==maven ==third party jar files
+
+
+https://www.npmjs.com/
+
+how to download third party modules into our application? How to push our module to this rep?
+
+javascript uses tool called "npm".
+
+
+node package manager:
+
+npm is tool is used to distribute node modules to others
+and you can get node modules from other others.
+
+npm tool is distributed along with node installation
+
+npm uses public repository server called npmjs.com npmjs.org
+
+tools and libs,frameworks all are distributed as node modules into repository.
+
+
+Java script application :
+
+Javascript Project Structure:(server side/ client side)
+.........................................................
+
+
+The project must have two things
+
+1.package.json file :
+   meta file which describes the project information
+2.node_modules folder
+   which contains libs/frameworks/tools code.
+
+create package.json file
+
+>npm init
+
+{
+  "name": "mynode-apps",
+  "version": "1.0.0",
+  "description": "Demo application",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "demo",
+    "app"
+  ],
+  "author": "Subramanian Murugan",
+  "license": "ISC"
+}
+npm is used
+
+to install,uninstall,publish node modules from node repo / into node repo.
+
+if you install third party modules , into your project, node distributes npm tool ,using this you can install,uninstall,upgrade node modules.
+
+
+npm syntax:
+
+npm commandName.
+
+node_modules : folder which can hold all javascript modules downloaded from repo.
+
+
+installing module:
+
+>npm install  moduleName  --options
+>npm i moduleName --options
+
+
+>npm install module 
+  here no option is told, means default is --save
+
+>npm i module
+
+options:
+ --save ; 
+ --save-dev
+ -g
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+App development ; three stage
+
+1.dev
+2.testing
+3.production.
+
+if you install any packages/dependencies, you can tell that is it for production and developemnt, only devel/testing
+
+if you are installing any node module, you can tell, do you want to use only for development
+or development + production.
+
+Unit testing libs : Junit.jar===>java
+
+ --save = >    development + production
+ --save-dev => only for development
+
+Which code need not be used for production:
+
+1.All testing related  libs/frameworks - unit,e2s
+2.Tools like compilers,frameworks related code.
+
+Who will separate out this depedency(lib) for production/dev
+
+ Build tools -  webpack.
+ webpack will scan package.json---extracting prod depedencies
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ --save => dev + production
+ default =>dev + production
+
+ --save-dev  -->only dev 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Demo;
+const array = require('lodash/array')
+
+//>npm install lodash --save
+//start using lodash array utiltiy.
+
+const list = [1, 2, 3];
+
+array.fill(list, 'a');
+console.log(list);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Development only module: unit testing module
+
+->chai.js
+
+npm install chai --save-dev
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+How to remove unwanted node modules?
+
+npm uinstall jquery --save
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+-g  --global:
+............
+
+global modules are modules which are not installed inside project floder.
+
+What is use of global modules?
+
+->tools
+   like compilers,build system,webserver,testing frameworks.
+
+
+C:\Users\sasub\AppData\Roaming\npm -- here only all global modules will be installed.
+
+Demo:
+....
+
+npm install module-name(tool) -g
+
+mocha : unit testing framwork, is used to run java script unit testing on node and browser.
+
+npm install --global mocha
+npm install -g mocha
+...........................................&&&&&&&&&&&&&&&&&&&&********************************************
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Automation: scripts;
+....................
+
+We can automate js applications.
+
+write all auotomation steps inside scripts
+
+"scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+
+key: value
+
+key is called command-script command
+value is task to be executed. ; task could be any thing.
+
+
+command can be built in or custom commands
+
+npm provides lot of built in commands
+
+start,test,postinstall,preinstall..........
+
+
+how to run node apps using npm scripts.
+
+node filename.js --direct use
+
+via script
+how to run script
+
+>npm commandname ---incase of built in command
+>npm start
+
+>npm run commandname - custom commands
+>npm run subu
+
+
+Problems with Global Modules:
+..............................
+
+1.version and compablity issue for new projects
+
+solution: 
+ install those golbal tools as local dev modules
 
 
 
+solution: 
+ install those golbal tools as local dev modules
 
+g vs --save-dev:
+
+global dependencies not good for multiple sharing projects
+install tools as project specific. --save-dev
+
+>npm i mocha --save-dev
+
+
+ single command trigger workflows
+
+ "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Do you think that core http module is used to create big application?
+ Yes,it is so complex.
+
+
+Framework.
+
+express.js:
+
+
+npm install mongojs
+
+Database integration:
+const mongojs = require('mongojs')
+
+//connecting to mongo db with collection
+//mongojs('connectionString') ; incase localhost /default port is taken automaticall
+const db = mongojs('booksdb')
+const books = db.collection('books')
+
+class BookService {
+    constructor() { }
+    findAll() {
+        return new Promise((resolve, reject) => {
+            db.books.find((err, docs) => {
+                if (err) {
+                    reject(err)
+                }
+                resolve(docs);
+            });
+        });
+
+    }
+}
+module.exports = new BookService();
+
+const { findAll } = require('../services/BookService');
+const express = require('express');
+const router = express.Router();
+
+router.get('/list', async (req, res) => {
+    try {
+        const books = await findAll();
+        res.status(200).json(books)
+    }
+    catch (err) {
+        res.status(400).json({ message: 'Books Not found' })
+    }
+});
+
+module.exports = router;
+
+const express = require('express');
+const MessageRouter = require('./routers/messagerouter');
+const BooksRouter = require('./routers/booksrouer');
+
+const { log } = console;
+const port = 3000;
+//create application object
+const app = express();
+//connect Routers with application object
+app.use('/api/message',MessageRouter)
+app.use('/api/books',BooksRouter);
+
+
+app.get('/', (request, response) => {
+    response.end('Home')
+});
+//start server
+app.listen(port, () => {
+    log('Express server is running @', port);
+});
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+What is Microservice?
+
+Microservices - also known as the microservice architecture - is an architectural style that structures an application as a collection of services that are
+
+Highly maintainable and testable
+Loosely coupled
+Independently deployable
+Organized around business capabilities
+Owned by a small team.
+
+How to build Microservice application?
+ You can build in any programming language. -java,.net,javascript,phython.....
+
+We are going to see , how to build ms app using javascript language and platform is node.js.
+
+
+Microservice application Consists of lot of components?
+
+1.Collbaration tool /communication tool
+   - protocals -  http,tcp,smtp,.......
+2.deployment
+   docker,kuber....
+3.messaging
+   integration
+4.transporters for sending and receiving messages
+5.scalablity - avaialablity
+6.fault management
+4.testing
+etc...............
+
+We need framework to implement microservices.
+
+if y come from java.
+
+Spring provides a framework - "Spring cloud"
+Vertx
+MicroProfile
+....
+
+if you want in javascript && node js
+
+
+Moleculer
+   Progressive microservices framework for Node.js.
+
+
+Moleculer features:
+
+1.Promise-based solution (async/await compatible)
+2.request-reply concept
+3.support event driven architecture with balancing
+4.built-in service registry & dynamic service discovery
+5.load balanced requests & events (round-robin, random, cpu-usage, latency, sharding)
+6.many fault tolerance features (Circuit Breaker, Bulkhead, Retry, Timeout, Fallback)
+7.plugin/middleware system
+8.support versioned services
+9.support Streams
+10.service mixins
+11.built-in caching solution (Memory, MemoryLRU, Redis)
+12.pluggable loggers (Console, File, Pino, Bunyan, Winston, Debug, Datadog, Log4js)
+13.pluggable transporters (TCP, NATS, MQTT, Redis, NATS Streaming, Kafka, AMQP 0.9, AMQP 1.0)
+14.pluggable serializers (JSON, Avro, MsgPack, Protocol Buffer, Thrift)
+15.pluggable parameter validator
+16.multiple services on a node/server
+17.master-less architecture, all nodes are equal
+18.parameter validation with fastest-validator
+19.built-in metrics feature with reporters (Console, CSV, Datadog, Event, Prometheus, StatsD)
+20.built-in tracing feature with exporters (Console, Datadog, Event, Jaeger, Zipkin)
+21.official API gateway, Database access and many other modules…
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+Moleculer setup:
+
+project creations;
+
+1.from begining like normal node application.
+2.moleculer cli- to setup realtime project with all artifacts.
+
+npm install moleculer
+
+
+Moleculer setup:
+
+project creations;
+
+1.from begining like normal node application.
+2.moleculer cli- to setup realtime project with all artifacts.
+
+npm install moleculer
+
+
+Core concepts in Molecular:
+..........................
+
+Service
+ A service is a simple JavaScript module containing some part of a complex application. 
+ A service represents a biz logic in your application.
+
+Service Broker : == Spring Container
+ Service Broker is the heart of Moleculer.
+
+It is responsible for management and communication between services (local and remote). 
+Each node must have an instance of Service Broker.
+
+"Service Broker is one single Node instance - Node runtime"
+
+
+		         Service1 -- Service 2 Service N
+                                     |
+                    		 --------------
+				 Service Broker
+				     |
+                                 Node Runtime
+
+
+
+Use case : how to create Service broker and start
+
+//broker 
+//ServiceBroker is  a class.
+const { ServiceBroker } = require('moleculer')
+
+//create Service Broker Instance
+const broker = new ServiceBroker();
+
+
+function startApp() {
+    //start broker engine
+    broker.start();
+}
+startApp();
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+const { ServiceBroker } = require('moleculer')
+
+//create Service Broker Instance
+const broker = new ServiceBroker();
+
+//create a service,by passing a literal object, which is called service scheam
+//service schema defines service charactertics , having biz method....
+broker.createService({
+    name: 'hello',
+    actions: {
+        //all biz methods goes here
+        sayHello() {
+            return 'Hello,Moleculer Service!!!';
+        }
+    }
+});
+
+
+function startAppUsingThen() {
+    //start broker engine
+    broker.start()
+        .then(res => {
+            console.log("Service broker is ready");
+            //call services - servicename.methodname
+            broker.call('hello.sayHello')
+                .then(response => {
+                    console.log("Service is ready");
+                    console.log(response);
+                })
+                .catch(err => {
+                    console.log("Service failed!!!");
+                });
+        })
+        .catch(err => {
+            console.log("Server broker failed to start");
+        });
+}
+startAppUsingThen();
+
+async function startApp() {
+    try {
+        await broker.start();
+        const response = await broker.call('hello.sayHello')
+        console.log(response);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+const { ServiceBroker } = require('moleculer')
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'hello',
+    actions: {
+        //all biz methods goes here
+        sayHello() {
+            return 'Hello,Moleculer Service!!!';
+        }
+    }
+});
+broker.createService({
+    name: 'hai',
+    actions: {
+        //all biz methods goes here
+        sayHai() {
+            return 'Hai,Moleculer Service!!!';
+        }
+    }
+});
+
+async function startApp() {
+    try {
+        await broker.start();
+        const hello = await broker.call('hello.sayHello')
+        const hai = await broker.call('hai.sayHai')
+
+        console.log(hello, hai);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+const { ServiceBroker } = require('moleculer')
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'hello',
+    actions: {
+        //all biz methods goes here
+        sayHello(ctx) {
+            //const name = ctx.params.name;
+            const { name, city } = ctx.params;
+            return `Hello ${name} from ${city}`;
+        }
+    }
+});
+
+async function startApp() {
+    try {
+        await broker.start();
+        const hello = await broker.call('hello.sayHello', { city: 'Coimbatore', name: 'Subramanain' })
+        console.log(hello);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+const { ServiceBroker } = require('moleculer')
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'hello',
+    actions: {
+        //all biz methods goes here
+        sayHello(ctx) {
+            //const name = ctx.params.name;
+            const { name, city } = ctx.params;
+            return `Hello ${name} from ${city}`;
+        }
+    }
+});
+
+async function startApp() {
+    try {
+        await broker.start();
+        const hello = await broker.call('hello.sayHello', { city: 'Coimbatore', name: 'Subramanain' })
+        console.log(hello);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const { ServiceBroker } = require('moleculer');
+const { log } = console;
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'hello',
+    actions: {
+        //define biz api of that service
+        sayHello(ctx) {
+            const { name } = ctx.params;
+            return `Hello,${name}`;
+        }
+    }
+});
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            //validation behaviour
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx) {
+                const { a, b } = ctx.params;
+                return a + b;
+            }
+        },
+        substract: {
+            //validation behaviour
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx) {
+                const { a, b } = ctx.params;
+                return a - b;
+            }
+        }
+    }
+})
+
+async function startApp() {
+    try {
+        await broker.start();
+        const res = await broker.call('math.add', { a: 10, b: 20 })
+        // const res = await broker.call('math.add', { a: "10", b: 20 })
+        const res1 = await broker.call('math.substract', { a: 30, b: 20 })
+
+
+        console.log(res,res1);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//create two services , how they can talk each- service --- service
+const { ServiceBroker } = require('moleculer');
+const { log } = console;
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            //validation behaviour
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx) {
+                const { a, b } = ctx.params;
+                //ctx object can be used to call service
+                return ctx.call('adder.add', { a: a, b: b });
+            }
+        }
+    }
+});
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add(ctx) {
+            const { a, b } = ctx.params;
+            return a + b;
+        }
+    }
+});
+
+
+
+async function startApp() {
+    try {
+        await broker.start();
+        const res = await broker.call('math.add', { a: 10, b: 20 })
+        console.log(res);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+During development , if you want test your services with many parameters instead of static parameters
+and also i want to do some admin task...
+
+Moleculer provides, an interactive REPL prompt.
+
+//create two services , how they can talk each- service --- service
+const { ServiceBroker } = require('moleculer');
+const { log } = console;
+const broker = new ServiceBroker();
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            //validation behaviour
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx) {
+                const { a, b } = ctx.params;
+                //ctx object can be used to call service
+                return ctx.call('adder.add', { a: a, b: b });
+            }
+        }
+    }
+});
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add(ctx) {
+            const { a, b } = ctx.params;
+            return a + b;
+        }
+    }
+});
+
+
+
+async function startApp() {
+    try {
+        await broker.start();
+        broker.repl()
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+startApp();
+/////////////////////////////////////////////////////////////////////////////////////////////////
+if you start calling, you will get the error 
+
+>> ERROR:
+ServiceNotFoundError: Service 'publisher.add' is not found.
+ 
+How to communicate remote services?
+
+We need some infra software and transporter
+
+Transporters:
+
+Transporter is an important module if you are running services on multiple nodes. 
+
+Transporter communicates with other nodes. 
+
+It transfers events, calls requests and processes responses …etc. 
+
+If a service runs on multiple instances on different nodes, the requests will be load-balanced among live nodes.
+
+Transpoerts:
+............
+
+Built-in transporters
+
+TCP transporter
+NATS Transporter
+Redis Transporter
+MQTT Transporter
+AMQP Transporter
+Kafka Transporter
+NATS Streaming (STAN) Transporter
+
+
+steps:
+
+1.start any transporter
+
+eg: nats,redis..
+
+docker run -p 4444:4444 nats -p 4444
+
+
+2.transporter configuration in service
+
+const broker = new ServiceBroker({
+    transporter: "nats://nats.server:4222"
+});
+
+3.npm install nats --save
+
+
+publisher
+
+const { ServiceBroker } = require('moleculer');
+const { log } = console;
+
+//service broker schema ; collection of properties;
+const broker = new ServiceBroker({
+    transporter: "nats://localhost:4444"
+});
+
+//publisher service
+broker.createService({
+    name: 'publisher',
+    actions: {
+        add: {
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx) {
+                const { a, b } = ctx.params;
+                return a + b;
+            }
+        }
+    }
+})
+
+async function init() {
+    try {
+        await broker.start();
+        broker.repl();
+    }
+    catch (e) {
+        log(e);
+    }
+}
+init();
+
+const { ServiceBroker } = require('moleculer');
+const { log } = console;
+
+const broker = new ServiceBroker({
+    transporter: "nats://localhost:4444"
+});
+
+//consumer service
+broker.createService({
+    name: 'consumer',
+    actions: {
+        calculate: {
+            async handler(ctx) {
+                log('consumer - calculate')
+                let result = await ctx.call('publisher.add', { a: 10, b: 20 });
+                log(`Result is ${result}`)
+            }
+        }
+    }
+})
+
+async function init() {
+    try {
+        await broker.start();
+        broker.repl();
+    }
+    catch (e) {
+        log(e);
+    }
+}
+init();
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Registry & Discovery:
+....................
+
+1.Service Registry
+
+ It is mini /small database , key-value pair database, in memory database.
+ Which has all service,actions,event listeners, nodes information.
+
+
+Points:
+1.Every Broker has in built Service Registry
+     Moleculer has built in in-memory registry, we can use that registry directly.
+
+2.All services local or remote are registered with service registry as soon you create 
+  service
+3.Molecular has built in registry called LocalDiscoveryRegistry, which is not using third party registry servers
+  like apache zoo keeper,cosule,etcd,eurka....
+
+4.if you want to make other servers as service registry -
+
+    registry: {
+        discoverer: "redis://redis-server:6379"
+    }  
+Dynamic service discovery
+1.Local
+2.Redis
+3.etcd3
+4.Customization
+
+Lab:
+How to use redis as registry server.
+
+
+Steps:
+
+1.start redis server
+
+docker run  -p 6379:6379 redis
+
+
+2.install redis module 
+npm install ioredis --save
+
+3.Service Registry Conguration.
+const broker = new ServiceBroker({
+    transporter: "nats://localhost:4444",
+    registry: {
+        discoverer: "redis://localhost:6379"
+    } 
+});
+
+4.start services , see the message below
+[2020-09-17T06:30:21.545Z] INFO  laptop-r2tggfdl-14456/REGISTRY: Strategy: RoundRobinStrategy
+[2020-09-17T06:30:21.546Z] INFO  laptop-r2tggfdl-14456/REGISTRY: Discoverer: RedisDiscoverer
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+HOW TO ADD REST API To molecular
+How to modularize application
+
+Types of services
+
+FrontEnd(REST end Points)
+Back End Services
+
+
+Rquest-----------------|ApiGateWay--------dispatch-----BackEnd
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 
 
